@@ -272,7 +272,7 @@ Resources:
       # Do not change this FunctionName without changing the SourceArn of the associated AWS::Lambda::Permission
       FunctionName: !Sub "project-cies-doc-${ResourceSuffix}"
       Handler: gov.va.med.cies.ocr.NewDocumentLambda
-      CodeUri: code/target/ocr-1.0-SNAPSHOT.jar
+      CodeUri: code
       Description: POST, HEAD and GET of a document submitted for OCR
       Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
       Tracing: Active
@@ -350,7 +350,7 @@ Resources:
     Properties:
       FunctionName: !Sub "project-cies-presignedurl-${ResourceSuffix}"
       Handler: gov.va.med.cies.ocr.PresignedUrlLambda
-      CodeUri: code/target/ocr-1.0-SNAPSHOT.jar
+      CodeUri: code
       Description: GET a presigned URL of a location to POST a document
       Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
       Tracing: Active
@@ -411,7 +411,7 @@ Resources:
     Properties:
       FunctionName: !Sub "project-cies-gettext-${ResourceSuffix}"
       Handler: gov.va.med.cies.ocr.TextRetrievalLambda
-      CodeUri: code/target/ocr-1.0-SNAPSHOT.jar
+      CodeUri: code
       Description: get text results function
       Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
       Tracing: Active
@@ -479,7 +479,7 @@ Resources:
       Tracing: Active
       Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
       Handler: gov.va.med.cies.ocr.NewDocumentLambda
-      CodeUri: code/target/ocr-1.0-SNAPSHOT.jar
+      CodeUri: code
       Timeout: 30
       Environment:
         Variables:
@@ -508,7 +508,7 @@ Resources:
       Tracing: Active
       Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
       Handler: gov.va.med.cies.ocr.ExtractStatusNotificationLambda
-      CodeUri: code/target/ocr-1.0-SNAPSHOT.jar
+      CodeUri: code
       Timeout: 30
       Environment:
         Variables:
