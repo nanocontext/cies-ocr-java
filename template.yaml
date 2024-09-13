@@ -271,8 +271,8 @@ Resources:
     Properties:
       # Do not change this FunctionName without changing the SourceArn of the associated AWS::Lambda::Permission
       FunctionName: !Sub "project-cies-doc-${ResourceSuffix}"
-      Handler: document_handler.lambda_handler
-      CodeUri: src
+      Handler: gov.va.med.cies.ocr.NewDocumentLambda
+      CodeUri: code/target/ocr-1.0-SNAPSHOT.jar
       Description: POST, HEAD and GET of a document submitted for OCR
       Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
       Tracing: Active
@@ -349,8 +349,8 @@ Resources:
     DependsOn: CiesApplicationListener
     Properties:
       FunctionName: !Sub "project-cies-presignedurl-${ResourceSuffix}"
-      Handler: presigned_url_handler.lambda_handler
-      CodeUri: src
+      Handler: gov.va.med.cies.ocr.PresignedUrlLambda
+      CodeUri: code/target/ocr-1.0-SNAPSHOT.jar
       Description: GET a presigned URL of a location to POST a document
       Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
       Tracing: Active
@@ -410,8 +410,8 @@ Resources:
     DependsOn: CiesApplicationListener
     Properties:
       FunctionName: !Sub "project-cies-gettext-${ResourceSuffix}"
-      Handler: text_handler.lambda_handler
-      CodeUri: src
+      Handler: gov.va.med.cies.ocr.TextRetrievalLambda
+      CodeUri: code/target/ocr-1.0-SNAPSHOT.jar
       Description: get text results function
       Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
       Tracing: Active
@@ -478,8 +478,8 @@ Resources:
       Description: Function to start Textract when a new document has been POSTed
       Tracing: Active
       Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
-      Handler: ocr_submission_handler.lambda_handler
-      CodeUri: src
+      Handler: gov.va.med.cies.ocr.NewDocumentLambda
+      CodeUri: code/target/ocr-1.0-SNAPSHOT.jar
       Timeout: 30
       Environment:
         Variables:
@@ -507,8 +507,8 @@ Resources:
       Description: Function to respond to Textract result in SNS Topic
       Tracing: Active
       Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
-      Handler: ocr_notification_handler.lambda_handler
-      CodeUri: src
+      Handler: gov.va.med.cies.ocr.ExtractStatusNotificationLambda
+      CodeUri: code/target/ocr-1.0-SNAPSHOT.jar
       Timeout: 30
       Environment:
         Variables:

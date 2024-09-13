@@ -12,23 +12,13 @@ import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class NewDocumentLambda implements RequestHandler<S3Event, Void>  {
+public class NewDocumentLambda
+        extends AbstractBaseLambda
+        implements RequestHandler<S3Event, Void>  {
     private final Logger logger = LoggerFactory.getLogger(DocumentLambda.class);
-    private final DocumentExtractManager dxm;
-    private String sourceBucketName;
 
     public NewDocumentLambda() {
-        this.sourceBucketName = System.getenv("SOURCE_BUCKET");
-        final String destinationBucketName = System.getenv("DESTINATION_BUCKET");
-        final String textractServiceRole = System.getenv("TEXTRACT_SERVICE_ROLE");
-        final String textractStatusTopic = System.getenv("TEXTRACT_STATUS_TOPIC");
-        final String region = System.getenv("AWS_REGION");
-
-        dxm = new DocumentExtractManager(
-                region,
-                sourceBucketName, destinationBucketName,
-                textractServiceRole, textractStatusTopic
-        );
+        super();
     }
 
     public Void handleRequest(S3Event s3Event, Context context) {
@@ -40,9 +30,9 @@ public class NewDocumentLambda implements RequestHandler<S3Event, Void>  {
                     S3EventNotification.S3BucketEntity bucketEntity = s3ObjectRef.getBucket();
                     S3EventNotification.S3ObjectEntity objectEntity = s3ObjectRef.getObject();
 
-                    if (sourceBucketName.equals(bucketEntity.getName()))
+                    if (getSourceBucketName().equals(bucketEntity.getName()))
                         logger.info("Unable to submit document for processing from bucket [{}], only documents from [{}] can be processed",
-                                bucketEntity.getName(), sourceBucketName);
+                                bucketEntity.getName(), getSourceBucketName());
                     else {
                         try {
                             final String identifier = objectEntity.getKey();
@@ -53,7 +43,7 @@ public class NewDocumentLambda implements RequestHandler<S3Event, Void>  {
                                     .withMethod("NewDocument")      // a pseudo-method specific to this app
                                     .withCanonicalDocument(submitDocument)
                                     .build();
-                            CanonicalResponse response = dxm.submitDocumentForTextExtraction(submitDocumentRequest);
+                            CanonicalResponse response = getDocumentExtractManager().submitDocumentForTextExtraction(submitDocumentRequest);
                             if (HttpStatus.SC_OK != response.getResult()) {
                                 logger.warn("Failed to submit [{}] for text extraction with [{}]", identifier, response.getException());
                             }
