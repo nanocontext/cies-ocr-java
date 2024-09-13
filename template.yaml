@@ -1,0 +1,541 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  spi_api_gw
+
+Parameters:
+  stage:
+    Description: Name of the APIs stage, note that this is also the "environment"
+    Type: String
+
+  ResourceSuffix:
+    Description: The suffix to append to resource names that are unique to an environment
+    Type: String
+
+  # NOTE: the account ID in which the ALB service runs, these are AWS accounts that are specific
+  # to the AWS region in which the ALB is deployed. Should be one of:
+  #   AWS GovCloud (US-West) – 048591011584
+  #   AWS GovCloud (US-East) – 190560391635
+  #   US East (N. Virginia) – 127311923021
+  #   US East (Ohio) – 033677994240
+  #   US West (N. California) – 027434742980
+  #   US West (Oregon) – 797873946194
+  AlbServiceRoleAccount:
+    Description: The AWS Account ID in which the ALB is deployed
+    Type: String
+
+  subnets:
+    Description: Subnets to assign to the Load Balancer
+    Type: CommaDelimitedList
+
+  networkInterfaceSubnet:
+    Description: The subnet to use for the ELB Network Interface
+    Type: String
+
+  LogLevel:
+    Description: setting for the log level of the functions
+    Type: String
+    Default: INFO
+    AllowedValues:
+      - DEBUG
+      - INFO
+      - WARNING
+      - ERROR
+      - CRITICAL
+
+  ALBVisibility:
+    Description: The desired visibility of the Application Load Balancer
+    Type: String
+    Default: internal
+    AllowedValues:
+      - internet-facing
+      - internal
+  
+  ARNScheme:
+    Description: The scheme for the ARN values, 'aws' for Commercial AWS, 'aws-us-gov' for GovCloud
+    Type: String
+    Default: 'aws-us-gov'
+    AllowedValues:
+      - 'aws'
+      - 'aws-us-gov'
+
+  VPC:
+    Description: The VPC in which the ALB resides
+    Type: String
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 128
+    Runtime: python3.11
+    Tags:
+      Environment: !Ref stage
+    Environment:
+      Variables:
+        LOG_LEVEL: !Ref LogLevel
+        POWERTOOLS_SERVICE_NAME: !Sub "project-cies-${stage}"
+        TEXTRACT_SERVICE_ROLE: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project/project-ocr-cies-role-textract-service-${stage}"
+        TEXTRACT_STATUS_TOPIC: !Ref TextractStatusTopic
+
+    Tracing: Active
+    # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
+    # LoggingConfig:
+    #   LogFormat: JSON
+    #   ApplicationLogLevel: DEBUG
+  Api:
+    TracingEnabled: true
+    Cors: # see CORS section
+      AllowOrigin: "'*'"
+      AllowHeaders: "'Content-Type,Authorization,X-Amz-Date'"
+      MaxAge: "'300'"
+    BinaryMediaTypes: # see Binary responses section
+      - "*~1*" # converts to */* for any binary type
+      # NOTE: use this stricter version if you're also using CORS; */* doesn't work with CORS
+      # see: https://github.com/aws-powertools/powertools-lambda-python/issues/3373#issuecomment-1821144779
+      # - "image~1*" # converts to image/*
+      # - "*~1csv" # converts to */csv, eg text/csv, application/csv
+
+Resources:
+  # ========================================================================================================
+  # Queues and Topics
+  # ========================================================================================================
+
+  # Textract notifies of OCR completion
+  TextractStatusTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "AmazonTextract-OCR-CIES-APP-SIP-API-TOPIC-${ResourceSuffix}"
+      # TopicName: !Sub "AmazonTextractOCR-${stage}-CIES-APP-SIP-API-TOPIC"
+      # TopicName: !Sub "AmazonTextractOCR-${ResourceSuffix}"
+      Tags:
+        - Key: "Stack"
+          Value: !Sub "${stage}"
+        - Key: "Instance"
+          Value: !Sub "${ResourceSuffix}"
+
+  # ========================================================================================================
+  # S3 Buckets
+  # ========================================================================================================
+  # The S3 Bucket where the ALB logs messsages
+  LoadBalancerLogBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "project-ocr-loadbalancerlog-${ResourceSuffix}"
+      VersioningConfiguration:
+        Status: Suspended
+      Tags:
+        - Key: "Stack"
+          Value: !Sub "${AWS::StackName}"
+        - Key: "Instance"
+          Value: !Sub "${ResourceSuffix}"
+
+  # The presence of s3:ListBucket changes the behavior of the headObject operation.
+  # With the s3:ListBucket permission the headObject operation will return a 404(not found) when the given key does not exist.
+  # Without the s3:ListBucket permission the headObject operation will return a 403(forbidden) when the given key does not exist,
+  # which may make sense from a strict security perspective but it makes it impossible to tell if a key exists or not.
+  # NOTE: the account ID in the Principal reference is one of:
+  #   AWS GovCloud (US-West) – 048591011584
+  #   AWS GovCloud (US-East) – 190560391635
+  LoadBalancerLogBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref LoadBalancerLogBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:${ARNScheme}:iam::${AlbServiceRoleAccount}:root"
+            Action: 
+              - 's3:ListBucket'
+              - 's3:GetBucketLocation'
+            # Resource: !Ref LoadBalancerLogBucket
+            # Resource: !GetAtt LoadBalancerLogBucket.Arn
+            Resource: !Sub "arn:${ARNScheme}:s3:::project-ocr-loadbalancerlog-${ResourceSuffix}"
+          - Effect: Allow
+            Principal: 
+              AWS: !Sub "arn:${ARNScheme}:iam::${AlbServiceRoleAccount}:root"
+            Action: 
+              - 's3:GetObject'
+              - 's3:PutObject'
+              - 's3:DeleteObject'
+            # Resource: !Ref LoadBalancerLogBucket
+            Resource: !Sub "arn:${ARNScheme}:s3:::project-ocr-loadbalancerlog-${ResourceSuffix}/*"
+
+  # The S3 Bucket where documents are posted
+  SourceBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "project-ocr-cies-bucket-source-${ResourceSuffix}"
+      VersioningConfiguration:
+        Status: Suspended
+      Tags:
+        - Key: "Stack"
+          Value: !Sub "${AWS::StackName}"
+        - Key: "Instance"
+          Value: !Sub "${ResourceSuffix}"
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: 's3:ObjectCreated:*'
+            Function: !GetAtt NewDocumentFunction.Arn
+          
+  # The S3 bucket where the Textract results are stored
+  DestinationBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "project-ocr-cies-bucket-destination-${ResourceSuffix}"
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: "Stack"
+          Value: !Sub "${AWS::StackName}"
+        - Key: "Instance"
+          Value: !Sub "${ResourceSuffix}"
+
+  # ========================================================================================================
+  # The Load Balancer that fronts the Lambda functions
+  # ========================================================================================================
+  CiesApplicationLoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub "project-ocr-cies-sg-${ResourceSuffix}"
+      GroupDescription: "The security group for the CIES Application Load Balancer"
+      VpcId: !Sub "${VPC}"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 10400
+          ToPort: 10400
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+
+  CiesApplicationNetworkInterface:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      GroupSet:
+        - !GetAtt CiesApplicationLoadBalancerSecurityGroup.GroupId
+      SubnetId: !Ref networkInterfaceSubnet
+
+  CiesApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    DependsOn: LoadBalancerLogBucketPolicy
+    Properties:
+      Type: "application"
+      IpAddressType: ipv4
+      Name: !Sub "project-ocr-cies-${ResourceSuffix}"
+      Scheme: !Sub "${ALBVisibility}"
+      Subnets: !Ref subnets
+      SecurityGroups: 
+        - !GetAtt CiesApplicationLoadBalancerSecurityGroup.GroupId
+      # See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticloadbalancingv2-loadbalancer-loadbalancerattribute.html
+      LoadBalancerAttributes:
+        - Key: "deletion_protection.enabled"
+          Value: "false"
+        - Key: "idle_timeout.timeout_seconds"
+          Value: 60
+        - Key: "client_keep_alive.seconds"
+          Value: 3600
+        - Key: "routing.http.preserve_host_header.enabled"
+          Value: "true"
+        - Key: "load_balancing.cross_zone.enabled"
+          Value: "true"
+        - Key: "access_logs.s3.enabled"
+          Value: "true"
+        - Key: "access_logs.s3.bucket"
+          Value: !Ref LoadBalancerLogBucket
+  CiesApplicationListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: fixed-response
+          FixedResponseConfig:
+            StatusCode: 400
+            ContentType: "text/plain"
+            MessageBody: "Bad Request, not mapped by the ELB listener"
+      LoadBalancerArn: !Ref CiesApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  # ========================================================================================================
+  # OCR REST Lambdas
+  # ========================================================================================================
+  # Submit the document to be OCR's: POST https://service.domain.tld/<document identifier>
+  DocumentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      # Do not change this FunctionName without changing the SourceArn of the associated AWS::Lambda::Permission
+      FunctionName: !Sub "project-cies-doc-${ResourceSuffix}"
+      Handler: document_handler.lambda_handler
+      CodeUri: src
+      Description: POST, HEAD and GET of a document submitted for OCR
+      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
+      Tracing: Active
+      Timeout: 30
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: SubmitTextSvcName
+          POWERTOOLS_METRICS_NAMESPACE: Powertools
+          POWERTOOLS_LOG_LEVEL: DEBUG
+          POWERTOOLS_DEV : True
+          SOURCE_BUCKET : !Sub "project-ocr-cies-bucket-source-${ResourceSuffix}"
+          DESTINATION_BUCKET : !Sub "project-ocr-cies-bucket-destination-${ResourceSuffix}"
+          TEXTRACT_SERVICE_ROLE : !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-textract-service-${stage}"
+          TEXTRACT_STATUS_TOPIC : !Ref TextractStatusTopic
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName:  !Ref StatusTrackingTableName
+      Tags:
+        LambdaPowertools: python
+  DocumentFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt DocumentFunction.Arn
+      Principal: elasticloadbalancing.amazonaws.com
+      # SourceArn: !Ref DocumentFunctionTargetGroup
+      # arn:aws:lambda:us-east-1:665192190124:function:project-cies-doc-dev-1
+      # arn:aws:elasticloadbalancing:us-east-1:665192190124:targetgroup/doc-dev-1/f9b949762207e8a7
+      SourceArn: !Sub "arn:${ARNScheme}:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/doc-${ResourceSuffix}/*"
+  DocumentFunctionTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    # The AWS::Lambda::Permission MUST be created before this AWS::ElasticLoadBalancingV2::TargetGroup, else the TargetGroup creation will fail,
+    # which also means that the SourceArn of the Permission cannot simply reference the Target Group ARN
+    DependsOn: DocumentFunctionPermission
+    Properties:
+      # The Name is referenced in the AWS::Lambda::Permission as part of the SourceArn, these must be kept in synch
+      Name: !Sub "doc-${ResourceSuffix}"
+      IpAddressType: ipv4
+      TargetType: lambda
+      Targets:
+        - Id: !GetAtt DocumentFunction.Arn
+      HealthCheckEnabled: false
+      Tags:
+        - Key: "project"
+          Value: "CIES-OCR"
+        - Key: "environment"
+          Value: !Sub "${stage}"
+  DocumentFunctionListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref DocumentFunctionTargetGroup
+      Conditions:
+        - Field: http-request-method
+          HttpRequestMethodConfig: 
+            Values:
+              - POST
+              - PUT
+              - HEAD
+              - GET
+        - Field: path-pattern
+          PathPatternConfig:
+            Values:
+              - "/*"
+      ListenerArn: !Ref CiesApplicationListener
+      Priority: 3
+
+  # Get a URL to which a document can be POSTed. The URL references the source S3 bucket directly
+  PresignedURLFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: CiesApplicationListener
+    Properties:
+      FunctionName: !Sub "project-cies-presignedurl-${ResourceSuffix}"
+      Handler: presigned_url_handler.lambda_handler
+      CodeUri: src
+      Description: GET a presigned URL of a location to POST a document
+      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
+      Tracing: Active
+      Timeout: 30
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          SOURCE_BUCKET : !Sub "project-ocr-cies-bucket-source-${ResourceSuffix}"
+          DESTINATION_BUCKET : !Sub "project-ocr-cies-bucket-destination-${ResourceSuffix}"
+          TEXTRACT_SERVICE_ROLE : !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-textract-service-${stage}"
+          TEXTRACT_STATUS_TOPIC : !Ref TextractStatusTopic
+  PresignedURLFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt PresignedURLFunction.Arn
+      Principal: elasticloadbalancing.amazonaws.com
+      SourceArn: !Sub "arn:${ARNScheme}:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/prsgn-${ResourceSuffix}/*"
+  PresignedURLFunctionTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: PresignedURLFunctionPermission
+    Properties:
+      # The Name is referenced in the AWS::Lambda::Permission as part of the SourceArn, these must be kept in synch
+      Name: !Sub "prsgn-${ResourceSuffix}"
+      IpAddressType: ipv4
+      TargetType: lambda
+      Targets:
+        - Id: !GetAtt PresignedURLFunction.Arn
+      HealthCheckEnabled: false
+      Tags:
+        - Key: "project"
+          Value: "CIES-OCR"
+        - Key: "environment"
+          Value: !Sub "${stage}"
+  PresignedURLFunctionListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref PresignedURLFunctionTargetGroup
+      Conditions:
+        - Field: http-request-method
+          HttpRequestMethodConfig: 
+            Values:
+              - GET
+        - Field: path-pattern
+          PathPatternConfig:
+            Values:
+              - "/presignedurl/*"
+      ListenerArn: !Ref CiesApplicationListener
+      Priority: 1
+
+  # Get the (OCR'd) text of a document: GET https://service.domain.tld/text/<document identifier>
+  GetTextFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: CiesApplicationListener
+    Properties:
+      FunctionName: !Sub "project-cies-gettext-${ResourceSuffix}"
+      Handler: text_handler.lambda_handler
+      CodeUri: src
+      Description: get text results function
+      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
+      Tracing: Active
+      Timeout: 30
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: GetTextSvcName
+          POWERTOOLS_METRICS_NAMESPACE: Powertools
+          POWERTOOLS_LOG_LEVEL: DEBUG
+          SOURCE_BUCKET : !Sub "project-ocr-cies-bucket-source-${ResourceSuffix}"
+          DESTINATION_BUCKET : !Sub "project-ocr-cies-bucket-destination-${ResourceSuffix}"
+          TEXTRACT_SERVICE_ROLE : !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-textract-service-${stage}"
+          TEXTRACT_STATUS_TOPIC : !Ref TextractStatusTopic
+      Tags:
+        LambdaPowertools: python
+  GetTextFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt GetTextFunction.Arn
+      Principal: elasticloadbalancing.amazonaws.com
+      # SourceArn: !Ref GetTextFunctionTargetGroup
+      SourceArn: !Sub "arn:${ARNScheme}:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/gettext-${ResourceSuffix}/*"
+  GetTextFunctionTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: GetTextFunctionPermission
+    Properties:
+      # The Name is referenced in the AWS::Lambda::Permission as part of the SourceArn, these must be kept in synch
+      Name: !Sub "gettext-${ResourceSuffix}"
+      IpAddressType: ipv4
+      TargetType: lambda
+      Targets:
+        - Id: !GetAtt GetTextFunction.Arn
+      HealthCheckEnabled: false
+      Tags:
+        - Key: "project"
+          Value: "CIES-OCR"
+        - Key: "environment"
+          Value: !Sub "${stage}"
+  GetTextFunctionListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref GetTextFunctionTargetGroup
+      Conditions:
+        - Field: http-request-method
+          HttpRequestMethodConfig: 
+            Values:
+              - GET
+        - Field: path-pattern
+          PathPatternConfig:
+            Values:
+              - "/text/*"
+      ListenerArn: !Ref CiesApplicationListener
+      Priority: 2
+
+  NewDocumentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "project-cies-newdocument-${ResourceSuffix}"
+      Description: Function to start Textract when a new document has been POSTed
+      Tracing: Active
+      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
+      Handler: ocr_submission_handler.lambda_handler
+      CodeUri: src
+      Timeout: 30
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: SNSFunctionSvcName
+          POWERTOOLS_METRICS_NAMESPACE: Powertools
+          POWERTOOLS_LOG_LEVEL: DEBUG
+          SOURCE_BUCKET : !Sub "project-ocr-cies-bucket-source-${ResourceSuffix}"
+          DESTINATION_BUCKET : !Sub "project-ocr-cies-bucket-destination-${ResourceSuffix}"
+          TEXTRACT_SERVICE_ROLE : !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-textract-service-${stage}"
+          TEXTRACT_STATUS_TOPIC : !Ref TextractStatusTopic
+      # This event must be commented out before running SAM, once the stack is deployed, then un-comment this and re-run SAM
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket:
+              Ref: SourceBucket
+            Events:
+              - 's3:ObjectCreated:*'
+  # The Textract completion function is triggered by Textract and publishes the results to SNS, there is no ALB connection
+  TextractCompletionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "project-cies-putstatus-${ResourceSuffix}"
+      Description: Function to respond to Textract result in SNS Topic
+      Tracing: Active
+      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
+      Handler: ocr_notification_handler.lambda_handler
+      CodeUri: src
+      Timeout: 30
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: SNSFunctionSvcName
+          POWERTOOLS_METRICS_NAMESPACE: Powertools
+          POWERTOOLS_LOG_LEVEL: DEBUG
+          SOURCE_BUCKET : !Sub "project-ocr-cies-bucket-source-${ResourceSuffix}"
+          DESTINATION_BUCKET : !Sub "project-ocr-cies-bucket-destination-${ResourceSuffix}"
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref TextractStatusTopic
+
+Outputs:
+  GetTextFunction:
+    Description: GET Text Lambda Function ARN
+    Value: !GetAtt GetTextFunction.Arn
+  DocumentFunction:
+    Description: POST, HEAD (status), GET Document Lambda Function ARN
+    Value: !GetAtt DocumentFunction.Arn
+  SNSFunction:
+    Description: SNS Process Textract Topic ARN
+    Value: !GetAtt TextractCompletionFunction.Arn
+  CiesApplicationLoadBalancer:
+    Description: Application Load Balancer ARN
+    Value: !GetAtt CiesApplicationLoadBalancer.LoadBalancerArn
+  CiesApplicationLoadBalancerDNS:
+    Description: Application Load Balancer DNS Name
+    Value: !GetAtt CiesApplicationLoadBalancer.DNSName
