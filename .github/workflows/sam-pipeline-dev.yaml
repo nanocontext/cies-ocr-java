@@ -77,7 +77,9 @@ jobs:
 
     # Run Integration tests
     # Get the URL of the Application Load Balancer
-    - run: export ALB_URL=sam list stack-outputs --output json --stack-name cies-bipp-dev-${{ github.run_id }}  | jq '.[] | select(.OutputKey=="CiesApplicationLoadBalancerDNS") | .OutputValue'
+    - run: ALB_URL="$(sam list stack-outputs --output json --stack-name cies-bipp-dev-${{ github.run_id }} | jq '.[] | select(.OutputKey=="CiesApplicationLoadBalancer") | .OutputValue')"
+    - run: echo $ALB_URL
+    # - run: sam list stack-outputs --output json --stack-name cies-bipp-dev-${{ github.run_id }}  | jq '.[] | select(.OutputKey=="CiesApplicationLoadBalancerDNS") | .OutputValue'
 
     # from https://github.com/marketplace/actions/run-jq
 #    - name: Extract ALB Load Balancer URL
