@@ -81,7 +81,7 @@ jobs:
     - run: echo $ALB_URL
     - name: Run integration tests with Maven
       working-directory: code
-      run: mvn -B integration-test
+      run: mvn -B -DALB_URL=$ALB_URL integration-test
     # - run: sam list stack-outputs --output json --stack-name cies-bipp-dev-${{ github.run_id }}  | jq '.[] | select(.OutputKey=="CiesApplicationLoadBalancerDNS") | .OutputValue'
 
     # from https://github.com/marketplace/actions/run-jq
