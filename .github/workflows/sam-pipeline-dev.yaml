@@ -77,7 +77,7 @@ jobs:
 
     # Run Integration tests
     # Get the URL of the Application Load Balancer
-    - run: ALB_URL="$(sam list stack-outputs --output json --stack-name cies-bipp-dev-${{ github.run_id }} | jq '.[] | select(.OutputKey=="CiesApplicationLoadBalancer") | .OutputValue')"
+    - run: export ALB_URL="$(sam list stack-outputs --output json --stack-name cies-bipp-dev-${{ github.run_id }} | jq '.[] | select(.OutputKey=="CiesApplicationLoadBalancer") | .OutputValue')"
     - run: echo $ALB_URL
     - name: Run integration tests with Maven
       working-directory: code
