@@ -75,7 +75,16 @@ jobs:
     # ${{ if eq(variables['Build.SourceBranchName'], 'Development' }}:
     #   environment: dev
 
-    # Run Integration tests- Specify unit tests here
+    # Run Integration tests
+    # Get the URL of the Application Load Balancer
+    - run: sam list stack-outputs --output json --stack-name cies-bipp-dev-${{ github.run_id }}  | jq '.'
+
+    # from https://github.com/marketplace/actions/run-jq
+#    - name: Extract ALB Load Balancer URL
+#        uses: sergeysova/jq-action@v2
+#        id: alb_url
+#        with:
+#          cmd: 'jq .version package.json -r'
 
     # sam delete, this removes the entire environment after integration testing is complete
     #- run: sam delete --config-env ctb --no-confirm-changeset --stack-name cies-bipp-local --region us-east-1
