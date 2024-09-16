@@ -82,7 +82,7 @@ jobs:
 #    - run: echo $LOAD_BALANCER_HOST
     - name: Run integration tests with Maven
       working-directory: code
-      run: mvn -B -DJUNK=8675309 -DLOAD_BALANCER_HOST="$(sam list stack-outputs --output json --stack-name cies-bipp-dev-${{ github.run_id }} | jq '.[] | select(.OutputKey=="CiesApplicationLoadBalancer") | .OutputValue')" integration-test
+      run: mvn -B -DLOAD_BALANCER_HOST="$(sam list stack-outputs --output json --stack-name cies-bipp-dev-${{ github.run_id }} | jq '.[] | select(.OutputKey=="CiesApplicationLoadBalancerDNS") | .OutputValue')" integration-test
     # - run: sam list stack-outputs --output json --stack-name cies-bipp-dev-${{ github.run_id }}  | jq '.[] | select(.OutputKey=="CiesApplicationLoadBalancerDNS") | .OutputValue'
 
     # from https://github.com/marketplace/actions/run-jq
