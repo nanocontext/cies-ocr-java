@@ -136,7 +136,7 @@ Resources:
   # S3 Buckets
   # ========================================================================================================
   # The Deployment S3 Bucket
-  LoadBalancerLogBucket:
+  DeploymentBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub "cies-ocr-deployment-${stage}"

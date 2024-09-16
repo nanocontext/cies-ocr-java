@@ -121,7 +121,7 @@ Resources:
       - Ref: TextractAccessPolicy
       - Ref: FunctionLoggingPolicy
       - Ref: SourceS3BucketAccessPolicy
-  LoadBalancerLogBucket:
+  DeploymentBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName:
