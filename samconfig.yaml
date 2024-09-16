@@ -17,25 +17,17 @@ prprd:
     deploy:
         parameters:
             resolve_s3: false
-            capabilities: CAPABILITY_IAM
-            stack_name: 'spi-ocr-app-prprd'
-            s3_prefix: 'spi-ocr-app-prprd'
-            disable_rollback: false
             parameter_overrides:
             - LogLevel=INFO
-            - ALBVisibility=internal
-            
+            - stage=prod
+
 prod:
     deploy:
         parameters:
             resolve_s3: false
-            capabilities: CAPABILITY_IAM
-            stack_name: 'spi-ocr-app-prod'
-            s3_prefix: 'spi-ocr-app-prod'
-            disable_rollback: false
             parameter_overrides:
             - LogLevel=INFO
-            - ALBVisibility=internal
+            - stage=prod
 
 # NOTE, the (ephemeral) dev environments parameters are defined as "default"
 # because the environment name is different for each dev environment
@@ -45,8 +37,7 @@ default:
     deploy:
         parameters:
             resolve_s3: false
-            disable_rollback: false
-            capabilities: CAPABILITY_IAM
+            # capabilities MUST be provided externally
             # stack-name MUST be provided externally
             # s3-bucket MUST be provided externally
             # VPC MUST be provided externally

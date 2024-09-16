@@ -60,9 +60,9 @@ jobs:
       # root of the Github project.
       # The Github Action Variables are also environment specific, enforced by a naming convention.
       # i.e. in "AWS_DEFAULT_VPC_ID" the environment is "DEFAULT", the equivalent for PROD would be "AWS_PROD_VPC_ID"
-      # The DEFUALT values are used for the 'dev' environment(s), PRPRD and PROD are both specific to their respective environments
+      # The DEFAULT values are used for the 'dev' environment(s), PRPRD and PROD are both specific to their respective environments
       # ResourceSuffix and env are the same value for 'prprd' and 'prod' deployment. 'dev' deployments are assigned a unique
       # ResourceSuffix to allow treatment as ephemeral instances. 'dev' instances are created and destroyed on each build.
-      - run: sam deploy --config-env prod --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-prod --s3-bucket cies-bipp-deployment-prod --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=vpc-94fb46ee AlbServiceRoleAccount=127311923021 subnets=subnet-93aac8cf,subnet-0723de9a5e38a2cdf networkInterfaceSubnet=subnet-93aac8cf ARNScheme=aws stage=prod ResourceSuffix=prod ALBVisibility=internal
+      - run: sam deploy --config-env prod --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-prod --s3-bucket cies-bipp-deployment-prod --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=${{ vars.PROD_VPC }} AlbServiceRoleAccount=${{ vars.PROD_ALBSERVICEROLEACCOUNT }} subnets=${{ vars.PROD_SUBNETS }} networkInterfaceSubnet=${{ vars.PROD_NETWORKINTERFACESUBNET }} ARNScheme=${{ vars.PROD_ARNSCHEME }}  ALBVisibility=${{ vars.PROD_ALBVISIBILITY }} stage=prod ResourceSuffix=prod
 
       # NOTE: Do not run the integration tests because those may be destructive

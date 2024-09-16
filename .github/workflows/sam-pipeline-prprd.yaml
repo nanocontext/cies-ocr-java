@@ -67,8 +67,8 @@ jobs:
       # The DEFUALT values are used for the 'dev' environment(s), PRPRD and PROD are both specific to their respective environments
       # ResourceSuffix and env are the same value for 'prprd' and 'prod' deployment. 'dev' deployments are assigned a unique
       # ResourceSuffix to allow treatment as ephemeral instances. 'dev' instances are created and destroyed on each build.
-      - run: sam deploy --config-env prprd --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-prprd --s3-bucket cies-bipp-deployment-prprd --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=vpc-94fb46ee AlbServiceRoleAccount=127311923021 subnets=subnet-93aac8cf,subnet-0723de9a5e38a2cdf networkInterfaceSubnet=subnet-93aac8cf ARNScheme=aws stage=prprd ResourceSuffix=prprd ALBVisibility=internal
-
+      - run: sam deploy --config-env prprd --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-prprd --s3-bucket cies-bipp-deployment-prprd --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=${{ vars.PRPRD_VPC }} AlbServiceRoleAccount=${{ vars.PRPRD_ALBSERVICEROLEACCOUNT }} subnets=${{ vars.PRPRD_SUBNETS }} networkInterfaceSubnet=${{ vars.PRPRD_NETWORKINTERFACESUBNET }} ARNScheme=${{ vars.PRPRD_ARNSCHEME }} ALBVisibility=${{ vars.PRPRD_ALBVISIBILITY }} stage=prprd ResourceSuffix=prprd
+      
       # Run Integration tests
       # Get the URL of the Application Load Balancer
       # export LOAD_BALANCER_HOST="$(sam list stack-outputs --output json --stack-name cies-bipp-dev-${{ github.run_id }} | jq '.[] | select(.OutputKey=="CiesApplicationLoadBalancer") | .OutputValue')"
