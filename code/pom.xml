@@ -69,6 +69,7 @@
             <version>3.0.3</version>
         </dependency>
 
+        <!-- JSON Parsing -->
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
@@ -83,6 +84,46 @@
         </dependency>
 
         <!-- Test Dependencies -->
+        <!-- https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.14</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <version>4.5.14</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/commons-cli/commons-cli -->
+        <dependency>
+            <groupId>commons-cli</groupId>
+            <artifactId>commons-cli</artifactId>
+            <version>1.8.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/javax.json/javax.json-api -->
+        <dependency>
+            <groupId>javax.json</groupId>
+            <artifactId>javax.json-api</artifactId>
+            <version>1.1.4</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
+        <dependency>
+            <groupId>org.glassfish</groupId>
+            <artifactId>javax.json</artifactId>
+            <version>1.1.4</version>
+            <scope>test</scope>
+        </dependency>
+
+
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
