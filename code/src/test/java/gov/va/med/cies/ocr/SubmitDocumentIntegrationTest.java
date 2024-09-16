@@ -9,8 +9,8 @@ public class SubmitDocumentIntegrationTest {
 
     @Test
     public void test() {
-        final String loadBalancerHost = System.getenv("LOAD_BALANCER_HOST");
-        final String junk = System.getenv("JUNK");
+        final String loadBalancerHost = System.getProperty("LOAD_BALANCER_HOST");
+        final String junk = System.getProperty("JUNK");
         logger.info("ALB host is {}, JUNK is {}", loadBalancerHost, junk);
     }
 }
