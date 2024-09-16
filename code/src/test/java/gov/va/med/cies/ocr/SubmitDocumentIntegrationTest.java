@@ -6,10 +6,11 @@ import org.testng.annotations.Test;
 
 public class SubmitDocumentIntegrationTest {
     private final Logger logger = LoggerFactory.getLogger(DocumentExtractManagerTest.class);
-    private final String albUrl = System.getenv("ALB_URL");
 
     @Test
     public void test() {
-        logger.info("ALB URL is {}", albUrl);
+        final String loadBalancerHost = System.getenv("LOAD_BALANCER_HOST");
+        final String junk = System.getenv("JUNK");
+        logger.info("ALB host is {}, JUNK is {}", loadBalancerHost, junk);
     }
 }
