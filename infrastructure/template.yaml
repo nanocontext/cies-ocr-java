@@ -133,6 +133,22 @@ Resources:
         - !Ref SourceS3BucketAccessPolicy
 
   # ========================================================================================================
+  # S3 Buckets
+  # ========================================================================================================
+  # The Deployment S3 Bucket
+  LoadBalancerLogBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "cies-ocr-deployment-${stage}"
+      VersioningConfiguration:
+        Status: Suspended
+      Tags:
+        - Key: "Stack"
+          Value: !Sub "${AWS::StackName}"
+        - Key: "Instance"
+          Value: !Sub "${stage}"
+
+  # ========================================================================================================
   # Outputs must include any identifiers which are needed for Application resources.
   # Typically the values output here are passed to the Application resource template
   # through the samconfig.toml file.
