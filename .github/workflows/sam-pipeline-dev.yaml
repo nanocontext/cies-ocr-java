@@ -69,7 +69,7 @@ jobs:
     # export LOAD_BALANCER_HOST="$(sam list stack-outputs --output json --stack-name cies-bipp-dev-${{ github.run_id }} | jq '.[] | select(.OutputKey=="CiesApplicationLoadBalancer") | .OutputValue')"
     - name: Run integration tests with Maven
       working-directory: code
-      run: mvn -B -DLOAD_BALANCER_HOST="$(sam list stack-outputs --output json --stack-name cies-bipp-dev-${{ github.run_id }} | jq '.[] | select(.OutputKey=="CiesApplicationLoadBalancerDNS") | .OutputValue')" integration-test
+      run: mvn -B -DLOAD_BALANCER_HOST="$(sam list stack-outputs --output json --stack-name cies-ocr-dev-${{ github.run_id }} | jq '.[] | select(.OutputKey=="CiesApplicationLoadBalancerDNS") | .OutputValue')" integration-test
 
     # sam delete, this removes the entire environment after integration testing is complete
-    - run: sam delete --no-prompts --stack-name cies-bipp-dev-${{ github.run_id }} --region us-east-1
+    - run: sam delete --no-prompts --stack-name cies-ocr-dev-${{ github.run_id }} --region us-east-1
