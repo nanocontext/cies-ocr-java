@@ -1,0 +1,132 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'spi_api_gw_infrastructure
+
+  '
+Parameters:
+  stage:
+    Description: Name of the APIs stage, note that this is also the "environment"
+    Type: String
+Globals:
+  Api:
+    TracingEnabled: true
+    Cors:
+      AllowOrigin: '''*'''
+      AllowHeaders: '''Content-Type,Authorization,X-Amz-Date'''
+      MaxAge: '''300'''
+    BinaryMediaTypes:
+    - '*~1*'
+Resources:
+  FunctionLoggingPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName:
+        Fn::Sub: project-ocr-cies-logging-${stage}
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Resource: arn:aws:logs:*:*:*
+  TextractAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName:
+        Fn::Sub: project-ocr-cies-textract-${stage}
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - textract:DetectDocumentText
+          - textract:AnalyzeDocument
+          - textract:StartDocumentTextDetection
+          - textract:StartDocumentAnalysis
+          - textract:GetDocumentTextDetection
+          - textract:GetDocumentAnalysis
+          Resource: '*'
+  FunctionS3BucketAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName:
+        Fn::Sub: project-ocr-cies-bucket-source-function-${stage}
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - s3:ListBucket
+          - s3:GetObject
+          Resource: '*'
+  SourceS3BucketAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName:
+        Fn::Sub: project-ocr-cies-bucket-source-${stage}
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - s3:ListBucket
+          - s3:GetObject
+          - s3:PutObject
+          - s3:DeleteObject
+          - s3:PutObjectTagging
+          - s3:PutObjectVersionTagging
+          - s3:GetObjectTagging
+          - s3:GetObjectVersionTagging
+          Resource: arn:aws:s3:::*
+  StatusFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::Sub: project-ocr-cies-role-status-function-${stage}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+      - arn:aws:iam::aws:policy/AWSLambda_FullAccess
+      - Ref: TextractAccessPolicy
+      - Ref: FunctionLoggingPolicy
+      - Ref: SourceS3BucketAccessPolicy
+  TextractServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::Sub: project-ocr-cies-role-textract-service-${stage}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - textract.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonSNSFullAccess
+      - Ref: TextractAccessPolicy
+      - Ref: FunctionLoggingPolicy
+      - Ref: SourceS3BucketAccessPolicy
+Outputs:
+  StatusFunctionRole:
+    Description: Lambda function role for status registration and notification
+    Value:
+      Ref: StatusFunctionRole
+  TextractServiceRole:
+    Description: Lambda function role for Textract access
+    Value:
+      Ref: TextractServiceRole

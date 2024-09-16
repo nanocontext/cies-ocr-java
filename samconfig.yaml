@@ -1,0 +1,66 @@
+version: 0.1
+
+# Notes: ARN references within the associated SAM template to some resources are defined
+# by naming convention, not by Reference, to avoid circular references. GovCloud ARNs use
+# a different scheme name 'aws-us-gov' instead of 'aws'.
+# For example, a reference to an ALB Target Group in commercial (local) deployment is:
+# arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/project-cies-doc-local/*
+# whereas in the GovCloud dev deployment it becomes:
+# arn:aws-us-gov:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/project-cies-doc-dev/*
+#
+# ALBVisibility determines whether the ALB is internet facing or only accessible from a VPC. For all deployment
+# except for local testing this value MUST be 'internal'. For 'local' deployment the value may be internet-facing,
+# in which case adding WAF that restricts access to only the developer IP to the ALB is highly recommended. External
+# IPs in the AWS range will be probed within minutes of endpoint creation.
+
+dev:
+    deploy:
+        parameters:
+            resolve_s3: false
+            capabilities: CAPABILITY_IAM
+            confirm_changeset: true
+            stack_name: 'spi-ocr-app-dev'
+            s3_prefix: 'spi-ocr-app-dev'
+            disable_rollback: false
+            parameter_overrides:
+            - LogLevel=DEBUG
+            - ALBVisibility=internal
+            
+prprd:
+    deploy:
+        parameters:
+            resolve_s3: false
+            capabilities: CAPABILITY_IAM
+            confirm_changeset: true
+            stack_name: 'spi-ocr-app-prprd'
+            s3_prefix: 'spi-ocr-app-prprd'
+            disable_rollback: false
+            parameter_overrides:
+            - LogLevel=INFO
+            - ALBVisibility=internal
+            
+prod:
+    deploy:
+        parameters:
+            resolve_s3: false
+            capabilities: CAPABILITY_IAM
+            confirm_changeset: true
+            stack_name: 'spi-ocr-app-prod'
+            s3_prefix: 'spi-ocr-app-prod'
+            disable_rollback: false
+            parameter_overrides:
+            - LogLevel=INFO
+            - ALBVisibility=internal
+
+# Following this point are configurations for developer local environment.
+default:
+    deploy:
+        parameters:
+            resolve_s3: false
+            capabilities: CAPABILITY_IAM
+            confirm_changeset: true
+            s3_prefix: 'spi-ocr-app-local'
+            disable_rollback: false
+            parameter_overrides:
+            - LogLevel=DEBUG
+            - ALBVisibility=internal

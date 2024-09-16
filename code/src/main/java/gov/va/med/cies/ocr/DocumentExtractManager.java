@@ -99,8 +99,6 @@ public class DocumentExtractManager {
 
     public URL generatePresignedPostURL(final String identifier)
             throws AbstractApplicationException {
-        if (identifier == null || identifier.isEmpty())
-            throw new BaseClientException("identifier must be non-null and a non-empty String");
 
         URL result = null;
         logger.debug("generatePresignedPostURL({}), sourceBucket is [{}], presignedUrlExpiration=[{}]",
