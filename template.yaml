@@ -141,7 +141,7 @@ Resources:
     Condition: EphemeralEnvironment
     Properties:
       ServiceToken: !Sub "arn:${ARNScheme}:lambda:${AWS::Region}:${AWS::AccountId}:function:empty_s3_bucket"
-      BucketName: !GetAtt LoadBalancerLogBucket.Name
+      BucketName: !Ref LoadBalancerLogBucket
 
   # The presence of s3:ListBucket changes the behavior of the headObject operation.
   # With the s3:ListBucket permission the headObject operation will return a 404(not found) when the given key does not exist.
