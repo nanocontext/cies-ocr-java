@@ -138,7 +138,7 @@ Resources:
   # This resource is conditional upon this being an ephemeral environment, i.e. 'stage' being 'dev'
   CleanupLogBucketOnDelete:
     Type: Custom::emptyS3Bucket
-#    Condition: EphemeralEnvironment
+    Condition: EphemeralEnvironment
     Properties:
       ServiceToken: !Sub "arn:${ARNScheme}:lambda:${AWS::Region}:${AWS::AccountId}:function:empty_s3_bucket"
       BucketName: !Ref LoadBalancerLogBucket
@@ -197,7 +197,7 @@ Resources:
   # This resource is conditional upon this being an ephemeral environment, i.e. 'stage' being 'dev'
   CleanupSourceBucketOnDelete:
     Type: Custom::emptyS3Bucket
-#    Condition: EphemeralEnvironment
+    Condition: EphemeralEnvironment
     Properties:
       ServiceToken: !Sub "arn:${ARNScheme}:lambda:${AWS::Region}:${AWS::AccountId}:function:empty_s3_bucket"
       BucketName: !Ref SourceBucket
@@ -219,7 +219,7 @@ Resources:
   # This resource is conditional upon this being an ephemeral environment, i.e. 'stage' being 'dev'
   CleanupDestinationBucketOnDelete:
     Type: Custom::emptyS3Bucket
-#    Condition: EphemeralEnvironment
+    Condition: EphemeralEnvironment
     Properties:
       ServiceToken: !Sub "arn:${ARNScheme}:lambda:${AWS::Region}:${AWS::AccountId}:function:empty_s3_bucket"
       BucketName: !Ref DestinationBucket
