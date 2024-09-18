@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   java-build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ BUILD_HOST }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 11
@@ -45,7 +45,7 @@ jobs:
 
   sam-build-deploy:
     needs: [java-build]
-    runs-on: ubuntu-latest
+    runs-on: ${{ BUILD_HOST }}
     steps:
       - uses: actions/checkout@v4
       - uses: aws-actions/setup-sam@v1
