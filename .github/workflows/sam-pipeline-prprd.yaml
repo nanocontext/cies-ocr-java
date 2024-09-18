@@ -49,7 +49,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: aws-actions/setup-sam@v1
-      - uses: aws-actions/configure-aws-credentials@v1
+      - uses: aws-actions/configure-aws-credentials@v3
         with:
         aws-region: ${{ vars.PRPRD_REGION }}
         role-to-assume: ${{ vars.PRPRD_ACTIONROLETOASSUME }}
