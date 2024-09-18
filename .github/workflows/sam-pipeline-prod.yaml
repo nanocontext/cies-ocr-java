@@ -47,8 +47,8 @@ jobs:
       - uses: aws-actions/setup-sam@v1
       - uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-region: us-east-1
-          role-to-assume: arn:aws:iam::665192190124:role/GitHub_Action
+        aws-region: ${{ vars.PROD_REGION }}
+        role-to-assume: ${{ vars.PROD_ACTIONROLETOASSUME }}
       # sam build
       - run: sam build --use-container --config-env prod
 
@@ -63,6 +63,6 @@ jobs:
       # The DEFAULT values are used for the 'dev' environment(s), PRPRD and PROD are both specific to their respective environments
       # ResourceSuffix and env are the same value for 'prprd' and 'prod' deployment. 'dev' deployments are assigned a unique
       # ResourceSuffix to allow treatment as ephemeral instances. 'dev' instances are created and destroyed on each build.
-      - run: sam deploy --config-env prod --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-ocr-prod --s3-bucket cies-ocr-deployment-prod --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=${{ vars.PROD_VPC }} AlbServiceRoleAccount=${{ vars.PROD_ALBSERVICEROLEACCOUNT }} subnets=${{ vars.PROD_SUBNETS }} networkInterfaceSubnet=${{ vars.PROD_NETWORKINTERFACESUBNET }} ARNScheme=${{ vars.PROD_ARNSCHEME }}  ALBVisibility=${{ vars.PROD_ALBVISIBILITY }} stage=prod ResourceSuffix=prod
+      - run: sam deploy --config-env prod --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-ocr-prod --s3-bucket cies-ocr-deployment-prod --capabilities CAPABILITY_IAM --region ${{ vars.PROD_REGION }} --on-failure ROLLBACK --parameter-overrides VPC=${{ vars.PROD_VPC }} AlbServiceRoleAccount=${{ vars.PROD_ALBSERVICEROLEACCOUNT }} subnets=${{ vars.PROD_SUBNETS }} networkInterfaceSubnet=${{ vars.PROD_NETWORKINTERFACESUBNET }} ARNScheme=${{ vars.PROD_ARNSCHEME }}  ALBVisibility=${{ vars.PROD_ALBVISIBILITY }} stage=prod ResourceSuffix=prod
 
       # NOTE: Do not run the integration tests because those may be destructive

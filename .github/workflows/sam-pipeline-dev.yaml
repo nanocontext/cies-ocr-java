@@ -46,8 +46,8 @@ jobs:
     - uses: aws-actions/setup-sam@v1
     - uses: aws-actions/configure-aws-credentials@v1
       with:
-        aws-region: us-east-1
-        role-to-assume: arn:aws:iam::665192190124:role/GitHub_Action
+        aws-region: ${{ vars.DEV_REGION }}
+        role-to-assume: ${{ vars.DEV_ACTIONROLETOASSUME }}
     # sam build
     - run: sam build --use-container --config-env dev-${{ github.run_id }}
 
@@ -62,7 +62,7 @@ jobs:
     # The DEFUALT values are used for the 'dev' environment(s), PRPRD and PROD are both specific to their respective environments
     # ResourceSuffix and env are the same value for 'prprd' and 'prod' deployment. 'dev' deployments are assigned a unique
     # ResourceSuffix to allow treatment as ephemeral instances. 'dev' instances are created and destroyed on each build.
-    - run: sam deploy --config-env dev-${{ github.run_id }} --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-ocr-dev-${{ github.run_id }} --s3-bucket cies-ocr-deployment-dev --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=${{ vars.DEV_VPC }} AlbServiceRoleAccount=${{ vars.DEV_ALBSERVICEROLEACCOUNT }} subnets=${{ vars.DEV_SUBNETS }} networkInterfaceSubnet=${{ vars.DEV_NETWORKINTERFACESUBNET }} ARNScheme=${{ vars.DEV_ARNSCHEME }} stage=dev ResourceSuffix=dev-${{ github.run_id }} ALBVisibility=${{ vars.DEV_ALBVISIBILITY }}
+    - run: sam deploy --config-env dev-${{ github.run_id }} --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-ocr-dev-${{ github.run_id }} --s3-bucket cies-ocr-deployment-dev --capabilities CAPABILITY_IAM --region ${{ vars.DEV_REGION }} --on-failure ROLLBACK --parameter-overrides VPC=${{ vars.DEV_VPC }} AlbServiceRoleAccount=${{ vars.DEV_ALBSERVICEROLEACCOUNT }} subnets=${{ vars.DEV_SUBNETS }} networkInterfaceSubnet=${{ vars.DEV_NETWORKINTERFACESUBNET }} ARNScheme=${{ vars.DEV_ARNSCHEME }} stage=dev ResourceSuffix=dev-${{ github.run_id }} ALBVisibility=${{ vars.DEV_ALBVISIBILITY }}
 
     # Run Integration tests
     # Get the URL of the Application Load Balancer
