@@ -44,7 +44,7 @@ jobs:
 #        run: mvn -B package --file pom.xml
 
   sam-build-deploy:
-    needs: [java-build]
+#    needs: [java-build]
     runs-on: ${{ vars.BUILD_HOST }}
     steps:
       - uses: actions/checkout@v4
