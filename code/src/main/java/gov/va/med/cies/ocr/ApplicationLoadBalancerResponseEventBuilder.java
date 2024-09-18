@@ -2,8 +2,9 @@ package gov.va.med.cies.ocr;
 
 import com.amazonaws.services.lambda.runtime.events.ApplicationLoadBalancerResponseEvent;
 import gov.va.med.cies.ocr.model.CanonicalDocument;
-import org.apache.http.HttpHeaders;
+
 import org.apache.http.HttpStatus;
+import org.apache.http.HttpHeaders;
 
 import java.util.HashMap;
 import java.util.Map;

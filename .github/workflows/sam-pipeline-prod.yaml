@@ -9,60 +9,60 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  actions: none
+  checks: write
+  contents: read
+  deployments: none
+  discussions: none
+  id-token: write
+  issues: none
+  packages: none
+  pages: none
+  pull-requests: read
+  repository-projects: none
+  security-events: none
+  statuses: none
+
 jobs:
-  if_merged:
-    if: github.event.pull_request.merged == true
-
+  java-build:
     runs-on: ubuntu-latest
-    permissions:
-      issues: write
-      contents: write
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.11"
-    - uses: aws-actions/setup-sam@v1
-    - uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
+      - uses: actions/checkout@v4
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: maven
+      - name: Build with Maven
+        working-directory: code
+        run: mvn -B package --file pom.xml
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install flake8 pytest
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+  sam-build-deploy:
+    needs: [java-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/setup-sam@v1
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::665192190124:role/GitHub_Action
+      # sam build
+      - run: sam build --use-container --config-env prod
 
-    - name: Lint with flake8
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      # validate the SAM template
+      - run: sam validate --lint
 
-    - name: Test with pytest
-      run: |
-        pytest
+      # Use SAM to deploy BIPP
+      # NOTE: the parameter overrides use Github Action Variables, go to /settings/variables/actions from the
+      # root of the Github project.
+      # The Github Action Variables are also environment specific, enforced by a naming convention.
+      # i.e. in "AWS_DEFAULT_VPC_ID" the environment is "DEFAULT", the equivalent for PROD would be "AWS_PROD_VPC_ID"
+      # The DEFAULT values are used for the 'dev' environment(s), PRPRD and PROD are both specific to their respective environments
+      # ResourceSuffix and env are the same value for 'prprd' and 'prod' deployment. 'dev' deployments are assigned a unique
+      # ResourceSuffix to allow treatment as ephemeral instances. 'dev' instances are created and destroyed on each build.
+      - run: sam deploy --config-env prod --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-ocr-prod --s3-bucket cies-ocr-deployment-prod --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=${{ vars.PROD_VPC }} AlbServiceRoleAccount=${{ vars.PROD_ALBSERVICEROLEACCOUNT }} subnets=${{ vars.PROD_SUBNETS }} networkInterfaceSubnet=${{ vars.PROD_NETWORKINTERFACESUBNET }} ARNScheme=${{ vars.PROD_ARNSCHEME }}  ALBVisibility=${{ vars.PROD_ALBVISIBILITY }} stage=prod ResourceSuffix=prod
 
-    - name: Tag the commit
-      run: git tag -a "prod-${{ github.sha }}" -m "prod-${{ github.sha }}"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Push the tag
-      run: git push origin "prod-${{ github.sha }}"
-
-    - run: echo ${{ github.sha }}
-
-    # sam build 
-    - run: sam build --use-container --config-env prod
-
-    # sam validate
-    - run: sam validate --config-env prod
-
-    # sam deploy
-    - run: sam deploy --config-env prod --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-prod --s3-bucket cies-bipp-deployment-prod --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=vpc-94fb46ee AlbServiceRoleAccount=127311923021 subnets=subnet-93aac8cf,subnet-0723de9a5e38a2cdf networkInterfaceSubnet=subnet-93aac8cf ARNScheme=aws stage=prod ResourceSuffix=prod
+      # NOTE: Do not run the integration tests because those may be destructive

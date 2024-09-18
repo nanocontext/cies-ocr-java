@@ -48,16 +48,11 @@ jobs:
       with:
         aws-region: us-east-1
         role-to-assume: arn:aws:iam::665192190124:role/GitHub_Action
-        #aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        #aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    # sam build 
-    - run: sam build --use-container --config-env ctb
+    # sam build
+    - run: sam build --use-container --config-env dev-${{ github.run_id }}
 
     # validate the SAM template
     - run: sam validate --lint
-
-    # Run Unit tests- Specify unit tests here 
-    #- run: pytest
 
     # Use SAM to deploy BIPP
     # NOTE: the parameter overrides use Github Action Variables, go to /settings/variables/actions from the
@@ -67,30 +62,14 @@ jobs:
     # The DEFUALT values are used for the 'dev' environment(s), PRPRD and PROD are both specific to their respective environments
     # ResourceSuffix and env are the same value for 'prprd' and 'prod' deployment. 'dev' deployments are assigned a unique
     # ResourceSuffix to allow treatment as ephemeral instances. 'dev' instances are created and destroyed on each build.
-    - run: sam deploy --config-env dev-${{ github.run_id }} --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-dev-${{ github.run_id }} --s3-bucket cies-bipp-deployment-dev --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=vpc-94fb46ee AlbServiceRoleAccount=127311923021 subnets=subnet-93aac8cf,subnet-0723de9a5e38a2cdf networkInterfaceSubnet=subnet-93aac8cf ARNScheme=aws stage=dev ResourceSuffix=dev-${{ github.run_id }} ALBVisibility=internet-facing
-
-    # if: ${{ env.DAY_OF_WEEK == 'Monday' }}
-    #   run: echo "$Greeting $First_Name. Today is $DAY_OF_WEEK!"
-    # -or-
-    # ${{ if eq(variables['Build.SourceBranchName'], 'Development' }}:
-    #   environment: dev
+    - run: sam deploy --config-env dev-${{ github.run_id }} --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-ocr-dev-${{ github.run_id }} --s3-bucket cies-ocr-deployment-dev --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=${{ vars.DEV_VPC }} AlbServiceRoleAccount=${{ vars.DEV_ALBSERVICEROLEACCOUNT }} subnets=${{ vars.DEV_SUBNETS }} networkInterfaceSubnet=${{ vars.DEV_NETWORKINTERFACESUBNET }} ARNScheme=${{ vars.DEV_ARNSCHEME }} stage=dev ResourceSuffix=dev-${{ github.run_id }} ALBVisibility=${{ vars.DEV_ALBVISIBILITY }}
 
     # Run Integration tests
     # Get the URL of the Application Load Balancer
     # export LOAD_BALANCER_HOST="$(sam list stack-outputs --output json --stack-name cies-bipp-dev-${{ github.run_id }} | jq '.[] | select(.OutputKey=="CiesApplicationLoadBalancer") | .OutputValue')"
-#    - run: export LOAD_BALANCER_HOST="$(sam list stack-outputs --output json --stack-name cies-bipp-dev-${{ github.run_id }} | jq '.[] | select(.OutputKey=="CiesApplicationLoadBalancer") | .OutputValue')"
-#    - run: echo $LOAD_BALANCER_HOST
     - name: Run integration tests with Maven
       working-directory: code
-      run: mvn -B -DLOAD_BALANCER_HOST="$(sam list stack-outputs --output json --stack-name cies-bipp-dev-${{ github.run_id }} | jq '.[] | select(.OutputKey=="CiesApplicationLoadBalancerDNS") | .OutputValue')" integration-test
-    # - run: sam list stack-outputs --output json --stack-name cies-bipp-dev-${{ github.run_id }}  | jq '.[] | select(.OutputKey=="CiesApplicationLoadBalancerDNS") | .OutputValue'
-
-    # from https://github.com/marketplace/actions/run-jq
-#    - name: Extract ALB Load Balancer URL
-#        uses: sergeysova/jq-action@v2
-#        id: alb_url
-#        with:
-#          cmd: 'jq .version package.json -r'
+      run: mvn -B -DLOAD_BALANCER_HOST="$(sam list stack-outputs --output json --stack-name cies-ocr-dev-${{ github.run_id }} | jq '.[] | select(.OutputKey=="CiesApplicationLoadBalancerDNS") | .OutputValue')" integration-test
 
     # sam delete, this removes the entire environment after integration testing is complete
-    #- run: sam delete --config-env ctb --no-confirm-changeset --stack-name cies-bipp-local --region us-east-1
+    #- run: sam delete --no-prompts --stack-name cies-ocr-dev-${{ github.run_id }} --region us-east-1
