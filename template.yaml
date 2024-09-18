@@ -65,8 +65,8 @@ Parameters:
 
 # A condition that is true when a 'dev' environment.Mappings:
 # 'dev' environments are created, tested and then deleted
-Conditions:
-  EphemeralEnvironment: !Equals [ !Ref stage, 'dev' ]
+#Conditions:
+#  EphemeralEnvironment: !Equals [ !Ref stage, 'dev' ]
 
 Globals:
   Function:
