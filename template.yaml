@@ -136,12 +136,12 @@ Resources:
 
   # This will empty the S3 bucket when CloudFormation deletes the stack.
   # This resource is conditional upon this being an ephemeral environment, i.e. 'stage' being 'dev'
-  CleanupLogBucketOnDelete:
-    Type: Custom::emptyS3Bucket
-    Condition: EphemeralEnvironment
-    Properties:
-      ServiceToken: !Sub "arn:${ARNScheme}:lambda:${AWS::Region}:${AWS::AccountId}:function:empty_s3_bucket"
-      BucketName: !Ref LoadBalancerLogBucket
+#  CleanupLogBucketOnDelete:
+#    Type: Custom::emptyS3Bucket
+#    Condition: EphemeralEnvironment
+#    Properties:
+#      ServiceToken: !Sub "arn:${ARNScheme}:lambda:${AWS::Region}:${AWS::AccountId}:function:empty_s3_bucket"
+#      BucketName: !Ref LoadBalancerLogBucket
 
   # The presence of s3:ListBucket changes the behavior of the headObject operation.
   # With the s3:ListBucket permission the headObject operation will return a 404(not found) when the given key does not exist.
@@ -195,12 +195,12 @@ Resources:
 
   # This will empty the S3 bucket when CloudFormation deletes the stack.
   # This resource is conditional upon this being an ephemeral environment, i.e. 'stage' being 'dev'
-  CleanupSourceBucketOnDelete:
-    Type: Custom::emptyS3Bucket
-    Condition: EphemeralEnvironment
-    Properties:
-      ServiceToken: !Sub "arn:${ARNScheme}:lambda:${AWS::Region}:${AWS::AccountId}:function:empty_s3_bucket"
-      BucketName: !Ref SourceBucket
+#  CleanupSourceBucketOnDelete:
+#    Type: Custom::emptyS3Bucket
+#    Condition: EphemeralEnvironment
+#    Properties:
+#      ServiceToken: !Sub "arn:${ARNScheme}:lambda:${AWS::Region}:${AWS::AccountId}:function:empty_s3_bucket"
+#      BucketName: !Ref SourceBucket
 
   # The S3 bucket where the Textract results are stored
   DestinationBucket:
@@ -217,12 +217,12 @@ Resources:
 
   # This will empty the S3 bucket when CloudFormation deletes the stack.
   # This resource is conditional upon this being an ephemeral environment, i.e. 'stage' being 'dev'
-  CleanupDestinationBucketOnDelete:
-    Type: Custom::emptyS3Bucket
-    Condition: EphemeralEnvironment
-    Properties:
-      ServiceToken: !Sub "arn:${ARNScheme}:lambda:${AWS::Region}:${AWS::AccountId}:function:empty_s3_bucket"
-      BucketName: !Ref DestinationBucket
+#  CleanupDestinationBucketOnDelete:
+#    Type: Custom::emptyS3Bucket
+#    Condition: EphemeralEnvironment
+#    Properties:
+#      ServiceToken: !Sub "arn:${ARNScheme}:lambda:${AWS::Region}:${AWS::AccountId}:function:empty_s3_bucket"
+#      BucketName: !Ref DestinationBucket
 
   # ========================================================================================================
   # The Load Balancer that fronts the Lambda functions
