@@ -306,7 +306,7 @@ Resources:
       Handler: gov.va.med.cies.ocr.NewDocumentLambda
       CodeUri: code
       Description: POST, HEAD and GET of a document submitted for OCR
-      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
+      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project/project-ocr-cies-role-status-function-${stage}"
       Tracing: Active
       Timeout: 30
       Architectures:
@@ -319,7 +319,7 @@ Resources:
           POWERTOOLS_DEV : True
           SOURCE_BUCKET : !Sub "project-ocr-cies-bucket-source-${ResourceSuffix}"
           DESTINATION_BUCKET : !Sub "project-ocr-cies-bucket-destination-${ResourceSuffix}"
-          TEXTRACT_SERVICE_ROLE : !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-textract-service-${stage}"
+          TEXTRACT_SERVICE_ROLE : !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project/project-ocr-cies-role-textract-service-${stage}"
           TEXTRACT_STATUS_TOPIC : !Ref TextractStatusTopic
       Policies:
         - DynamoDBCrudPolicy:
@@ -384,7 +384,7 @@ Resources:
       Handler: gov.va.med.cies.ocr.PresignedUrlLambda
       CodeUri: code
       Description: GET a presigned URL of a location to POST a document
-      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
+      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project/project-ocr-cies-role-status-function-${stage}"
       Tracing: Active
       Timeout: 30
       Architectures:
@@ -393,7 +393,7 @@ Resources:
         Variables:
           SOURCE_BUCKET : !Sub "project-ocr-cies-bucket-source-${ResourceSuffix}"
           DESTINATION_BUCKET : !Sub "project-ocr-cies-bucket-destination-${ResourceSuffix}"
-          TEXTRACT_SERVICE_ROLE : !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-textract-service-${stage}"
+          TEXTRACT_SERVICE_ROLE : !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project/project-ocr-cies-role-textract-service-${stage}"
           TEXTRACT_STATUS_TOPIC : !Ref TextractStatusTopic
   PresignedURLFunctionPermission:
     Type: AWS::Lambda::Permission
@@ -445,7 +445,7 @@ Resources:
       Handler: gov.va.med.cies.ocr.TextRetrievalLambda
       CodeUri: code
       Description: get text results function
-      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
+      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project/project-ocr-cies-role-status-function-${stage}"
       Tracing: Active
       Timeout: 30
       Architectures:
@@ -457,7 +457,7 @@ Resources:
           POWERTOOLS_LOG_LEVEL: DEBUG
           SOURCE_BUCKET : !Sub "project-ocr-cies-bucket-source-${ResourceSuffix}"
           DESTINATION_BUCKET : !Sub "project-ocr-cies-bucket-destination-${ResourceSuffix}"
-          TEXTRACT_SERVICE_ROLE : !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-textract-service-${stage}"
+          TEXTRACT_SERVICE_ROLE : !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project/project-ocr-cies-role-textract-service-${stage}"
           TEXTRACT_STATUS_TOPIC : !Ref TextractStatusTopic
       Tags:
         LambdaPowertools: python
@@ -509,7 +509,7 @@ Resources:
       FunctionName: !Sub "project-cies-newdocument-${ResourceSuffix}"
       Description: Function to start Textract when a new document has been POSTed
       Tracing: Active
-      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
+      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project/project-ocr-cies-role-status-function-${stage}"
       Handler: gov.va.med.cies.ocr.NewDocumentLambda
       CodeUri: code
       Timeout: 30
@@ -520,7 +520,7 @@ Resources:
           POWERTOOLS_LOG_LEVEL: DEBUG
           SOURCE_BUCKET : !Sub "project-ocr-cies-bucket-source-${ResourceSuffix}"
           DESTINATION_BUCKET : !Sub "project-ocr-cies-bucket-destination-${ResourceSuffix}"
-          TEXTRACT_SERVICE_ROLE : !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-textract-service-${stage}"
+          TEXTRACT_SERVICE_ROLE : !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project/project-ocr-cies-role-textract-service-${stage}"
           TEXTRACT_STATUS_TOPIC : !Ref TextractStatusTopic
       # This event must be commented out before running SAM, once the stack is deployed, then un-comment this and re-run SAM
       Events:
@@ -538,7 +538,7 @@ Resources:
       FunctionName: !Sub "project-cies-putstatus-${ResourceSuffix}"
       Description: Function to respond to Textract result in SNS Topic
       Tracing: Active
-      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
+      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project/project-ocr-cies-role-status-function-${stage}"
       Handler: gov.va.med.cies.ocr.ExtractStatusNotificationLambda
       CodeUri: code
       Timeout: 30
